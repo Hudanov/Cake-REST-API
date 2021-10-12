@@ -14,7 +14,7 @@ func TestCake(t *testing.T) {
 		j := newTestJwtService(t)
 
 		jwts := httptest.NewServer(http.HandlerFunc(wrapJwt(j, u.JWT)))
-		cks := httptest.NewServer(http.HandlerFunc(j.JWTAuth(u.repository, getCakeHandler)))
+		cks := httptest.NewServer(http.HandlerFunc(j.JWTAuth(u.repository, u.getCakeHandler)))
 		regs := httptest.NewServer(http.HandlerFunc(u.Register))
 		defer func() {
 			cks.Close()
@@ -60,7 +60,7 @@ func TestCake(t *testing.T) {
 
 		jwts := httptest.NewServer(http.HandlerFunc(wrapJwt(j, u.JWT)))
 		regs := httptest.NewServer(http.HandlerFunc(u.Register))
-		cks := httptest.NewServer(http.HandlerFunc(j.JWTAuth(u.repository, getCakeHandler)))
+		cks := httptest.NewServer(http.HandlerFunc(j.JWTAuth(u.repository, u.getCakeHandler)))
 		defer func() {
 			jwts.Close()
 			regs.Close()

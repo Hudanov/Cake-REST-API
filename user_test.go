@@ -59,6 +59,9 @@ func prepareParams(t *testing.T, params map[string]interface{}) io.Reader {
 func newTestUserService() *UserService {
 	return &UserService{
 		repository: NewInMemoryUserStorage(),
+		notifier:   make(chan []byte, 10),
+		reg:        make(chan bool, 5),
+		cake:       make(chan bool, 5),
 	}
 }
 
@@ -200,7 +203,7 @@ func TestUsers_JWT(t *testing.T) {
 		j := newTestJwtService(t)
 
 		jwts := httptest.NewServer(http.HandlerFunc(wrapJwt(j, u.JWT)))
-		cks := httptest.NewServer(http.HandlerFunc(j.JWTAuth(u.repository, getCakeHandler)))
+		cks := httptest.NewServer(http.HandlerFunc(j.JWTAuth(u.repository, u.getCakeHandler)))
 		upds := httptest.NewServer(http.HandlerFunc(j.JWTAuth(u.repository, u.UpdateFavoriteCakeHandler)))
 		defer func() {
 			jwts.Close()

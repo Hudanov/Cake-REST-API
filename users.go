@@ -107,6 +107,9 @@ type UserRepository interface {
 
 type UserService struct {
 	repository UserRepository
+	notifier   chan []byte
+	reg        chan bool
+	cake       chan bool
 }
 
 type UserRegisterParams struct {
@@ -133,7 +136,7 @@ func validateEmail(email string) error {
 	// 1. Email is valid
 	match, _ := regexp.Match(`(^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$)`, []byte(email))
 	if !match {
-		return errors.New("Unvalid email address")
+		return errors.New("invalid email address")
 	}
 	return nil
 }
@@ -141,7 +144,7 @@ func validateEmail(email string) error {
 func validatePassword(password string) error {
 	// 2. Password at least 8 symbols
 	if len(password) < 8 {
-		return errors.New("Password too short")
+		return errors.New("password too short")
 	}
 	return nil
 }
@@ -149,13 +152,13 @@ func validatePassword(password string) error {
 func validateCake(cake string) error {
 	// 3. Favorite cake not empty
 	if len(cake) == 0 {
-		return errors.New("Favorit cake can't be empty")
+		return errors.New("favorite cake can't be empty")
 	}
 
 	// 4. Favorite cake only alphabetic
 	match, _ := regexp.Match(`\W`, []byte(cake))
 	if match {
-		return errors.New("Favorit cake can contain only letters")
+		return errors.New("favorite cake can contain only letters")
 	}
 
 	return nil
@@ -188,6 +191,8 @@ func (u *UserService) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeResponse(w, http.StatusCreated, "registered")
+	u.notifier <- []byte("registered: " + params.Email)
+	registeredUsers.Inc()
 }
 
 func (u *UserService) UpdateFavoriteCakeHandler(w http.ResponseWriter, r *http.Request, user User) {
@@ -212,6 +217,7 @@ func (u *UserService) UpdateFavoriteCakeHandler(w http.ResponseWriter, r *http.R
 	}
 
 	writeResponse(w, http.StatusOK, "favorite cake changed")
+	u.notifier <- []byte("updated cake: " + newUser.Email)
 }
 
 func (u *UserService) UpdateEmailHandler(w http.ResponseWriter, r *http.Request, user User) {
@@ -242,6 +248,7 @@ func (u *UserService) UpdateEmailHandler(w http.ResponseWriter, r *http.Request,
 	}
 
 	writeResponse(w, http.StatusOK, "email changed")
+	u.notifier <- []byte("updated email: " + newUser.Email + " -> " + params.Email)
 }
 
 func (u *UserService) UpdatePasswordHandler(w http.ResponseWriter, r *http.Request, user User) {
@@ -266,6 +273,7 @@ func (u *UserService) UpdatePasswordHandler(w http.ResponseWriter, r *http.Reque
 	}
 
 	writeResponse(w, http.StatusOK, "password changed")
+	u.notifier <- []byte("updated password: " + newUser.Email)
 }
 
 func handleError(err error, w http.ResponseWriter) {

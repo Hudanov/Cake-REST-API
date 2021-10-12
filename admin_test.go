@@ -119,7 +119,7 @@ func TestAdmin(t *testing.T) {
 		j := newTestJwtService(t)
 
 		jwts := httptest.NewServer(http.HandlerFunc(wrapJwt(j, u.JWT)))
-		cks := httptest.NewServer(http.HandlerFunc(j.JWTAuth(u.repository, getCakeHandler)))
+		cks := httptest.NewServer(http.HandlerFunc(j.JWTAuth(u.repository, u.getCakeHandler)))
 		defer func() {
 			jwts.Close()
 			cks.Close()
@@ -155,7 +155,7 @@ func TestAdmin(t *testing.T) {
 		j := newTestJwtService(t)
 
 		jwts := httptest.NewServer(http.HandlerFunc(wrapJwt(j, u.JWT)))
-		cks := httptest.NewServer(http.HandlerFunc(j.JWTAuth(u.repository, getCakeHandler)))
+		cks := httptest.NewServer(http.HandlerFunc(j.JWTAuth(u.repository, u.getCakeHandler)))
 		defer func() {
 			jwts.Close()
 			cks.Close()

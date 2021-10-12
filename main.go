@@ -13,8 +13,9 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func getCakeHandler(w http.ResponseWriter, r *http.Request, u User) {
+func (us *UserService) getCakeHandler(w http.ResponseWriter, r *http.Request, u User) {
 	w.Write([]byte(u.FavoriteCake))
+	cakesGiven.Inc()
 }
 
 func wrapJwt(
@@ -29,11 +30,11 @@ func wrapJwt(
 func (s *UserService) addSuperadmin() error {
 	superadminEmail, err := os.LookupEnv("CAKE_ADMIN_EMAIL")
 	if !err {
-		return errors.New("Undefined superadmin email")
+		return errors.New("undefined superadmin email")
 	}
 	superadminPassword, err := os.LookupEnv("CAKE_ADMIN_PASSWORD")
 	if !err {
-		return errors.New("Undefined superadmin password")
+		return errors.New("undefined superadmin password")
 	}
 
 	superadmin := User{
@@ -59,6 +60,7 @@ func main() {
 
 	users := NewInMemoryUserStorage()
 	userService := UserService{
+		notifier:   make(chan []byte, 10),
 		repository: users,
 	}
 
@@ -69,8 +71,11 @@ func main() {
 		panic(err)
 	}
 
-	r.HandleFunc("/cake", logRequest(jwtService.JWTAuth(users, getCakeHandler))).Methods(http.MethodGet)
-	r.HandleFunc("/user/me", logRequest(jwtService.JWTAuth(users, getCakeHandler))).Methods(http.MethodGet)
+	go runPublisher(userService.notifier)
+	go startProm()
+
+	r.HandleFunc("/cake", logRequest(jwtService.JWTAuth(users, userService.getCakeHandler))).Methods(http.MethodGet)
+	r.HandleFunc("/user/me", logRequest(jwtService.JWTAuth(users, userService.getCakeHandler))).Methods(http.MethodGet)
 	r.HandleFunc("/user/register", logRequest(userService.Register)).Methods(http.MethodPost)
 	r.HandleFunc("/user/favorite_cake", logRequest(jwtService.
 		JWTAuth(users, userService.UpdateFavoriteCakeHandler))).Methods(http.MethodPost)
